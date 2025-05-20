@@ -1,0 +1,45 @@
+---
+title: "Average Salary by State in the U.S. (2024)"
+format: gfm
+---
+
+This repository contains code in R to replicate the following graphic:
+
+\
+
+![Average Salary by State in the U.S. (2024)](average-salary-by-state-in-the-us.png){width=80%}
+
+
+
+## Source
+
+- Title: __Average Salary by State in the U.S.__
+
+- Author(s): Belle Wong
+
+- Date: Updated Sep 27, 2024
+
+- Organization: Forbes
+
+- URL: <https://www.forbes.com/advisor/business/average-salary-by-state/>
+
+- PDF: [Average-Salary-By-State-Forbes.pdf](Average-Salary-By-State-Forbes.pdf)
+
+
+
+## Data
+
+Curated CSV file:
+
+CSV: [wage.tsv](wage.tsv)
+
+\
+
+In addition to the above CSV, similar data is available in SoFi's 
+article __Average US Salary by State__ by Jacqueline DeMarco (last update
+on Jan 28, 2025)
+
+<https://www.sofi.com/learn/content/average-salary-in-us/>
+
+Webpage accessed in Spring and Fall 2024, and also in Spring 2025.
+
