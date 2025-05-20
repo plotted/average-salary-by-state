@@ -1,0 +1,349 @@
+---
+title: "Average Salary by State, 2024"
+author: "Gaston Sanchez"
+date: "May 20, 2025"
+format: 
+  html:
+    toc: true
+    number-sections: true
+    theme: zephyr
+embed-resources: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, error = TRUE)
+```
+
+
+```{r pkgs, message = FALSE, echo = FALSE}
+# packages
+library(tidyverse)     # ecosystem of data science packages
+library(rvest)         # for web scraping
+library(sf)            # "simple features" (classes for maps)
+library(rnaturalearth) # maps database
+library(leaflet)       # web interactive maps
+library(usmap)         # map of US states (includes Alaska and Hawaii)
+library(ggiraph)       # make ggplots interactive
+```
+
+
+# Description
+
+The data visualization of this module is based on the choropleth map 
+that appears in the following Forbes's article by Belle Wong:
+
+__Average Salary by State in 2024__
+
+<https://www.forbes.com/advisor/business/average-salary-by-state/>
+
+![Choropleth map of Average Salary by State in the U.S.](average-salary-by-state-in-the-us.png)
+
+\
+
+## Details (datasheet)
+
+- __Topic(s)__: 
+  + Economics 
+  + U.S.
+  + Salaries
+- __Data__:
+  + Size: small data
+  + Format: 2 data sets, one in CSV format, another in HTML
+  + Requires web scraping, assuming data from HTML
+  + Requires some cleansing (e.g. regex)
+  + Requires merging salary-data with map-data
+- __Graphic__:
+  + Type: choropleth map
+  + Styles: ggplot, interactive ggiraph, interactive leaflet 
+  + Interactive: yes
+
+
+## R Packages
+
+```{r pkgs, message = FALSE, eval = FALSE}
+```
+
+
+## Other Sources
+
+Related to the above article, there is a similar one in SoFi's website titled 
+__Average US Salary by State__ by Jacqueline DeMarco (updated Jan 28, 2025)
+
+<https://www.sofi.com/learn/content/average-salary-in-us/>
+
+
+-----
+
+
+# Data
+
+_Average Salary by State_ data is displayed in the above Forbes' webpage.
+Unfortunately, this HTML table is not scrapable. 
+
+The good news is that the same data, plus the median salary, can be found in 
+the following SoFi webpage:
+
+<https://www.sofi.com/learn/content/average-salary-in-us/>
+
+
+
+## Data from Forbes
+
+The data in Forbes is an HTML table. However, this HTML table
+is not scrapable. This is why are providing a data set (obtained by copy-paste 
+from Forbes' webpage) in the text file `wage.tsv` (Tab-Separated Value file).
+The data can be easily imported with the function `read_tsv()` as follows:
+
+```{r}
+# import file (all columns as 'character' data)
+wages = read_tsv("wage.tsv", col_types = "ccc")
+
+head(wages)
+```
+
+
+## Data from SoFi
+
+Alternatively, you can also scrape the HTML table available in the SoFi 
+webpage _Average US Salary by State_ (by Jacqueline DeMarco, 03/28/24)
+
+
+```{r eval = FALSE}
+download.file(
+  url = "https://www.sofi.com/learn/content/average-salary-in-us/", 
+  destfile = "average-salary-in-us.html")
+```
+
+The interesting thing is that this table contains not just average
+salaries but also median salaries.
+
+```{r}
+# import data
+tbls = read_html("average-salary-in-us.html") |>
+  html_table()
+
+dat = tbls[[1]]
+
+# data with average and median salaries
+dat = dat |>
+  mutate(Average = as.numeric(str_remove_all(Average, "[,$]")),
+         Median = as.numeric(str_remove_all(Median, "[,$]")))
+```
+
+
+
+## Data Preparation
+
+The raw data is not quite ready to be crunched. We need to perform a few 
+manipulations of `Annual Average Wage` values, dealing with strings:
+
+```{r}
+wages = wages |>
+  mutate(Average = as.numeric(str_remove_all(`Annual Average Wage`, "[$,]")))
+
+wages
+```
+
+
+-----
+
+
+# Graphs: Choropleth Maps
+
+Let's go over a series of plotting rounds, starting with a basic map, 
+and then gradually adding more elements, and customizing its appearance
+to get as close as possible to our target visualization.
+
+
+## Map of USA from `"rnaturalearth"`
+
+We begin by producing a first map of the U.S. This requires to get map data
+of the US territory---at the State level---via `ne_states()`. Notice that
+the `returnclass` argument must be set as `returnclass = "sf"` to guarantee 
+that the return map object is of class `"sf"` (simple features). 
+
+```{r}
+# map data
+usa_map = ne_states(
+  country = "united states of america", 
+  returnclass = "sf")
+
+class(usa_map)
+```
+
+As you can tell, the object `usa_map` is an object of class `"sf"`. But it
+is also a `data.frame` object, i.e. a table. It contains a large number of 
+columns. The most important columns---for our exploratory graphing purposes---are
+`name` (name of State), and the latitude-longitude coordinates in `geometry`.
+
+```{r}
+names(usa_map)
+```
+
+
+With the `"sf'` object in place, we can pass it to `ggplot()` and its layer
+function `geom_sf()`. To get a map of the contiguous states, we adjust the
+latitude-longitude coordinates with `coord_sf()`:
+
+```{r}
+# basic map of USA (contiguous states)
+ggplot() +
+  geom_sf(data = usa_map) +
+  coord_sf(xlim = c(-123, -67), ylim = c(25, 50))
+```
+
+
+## Merging map-data with salary-data
+
+So far we have a map of the US States. But what about the salary data?
+We need to merge (join) the table of the map `usa_map` with the table of 
+average salary by state `wages`. This merging operation is done with 
+`inner_join()`, indicating the names of the columns in both tables that have
+the States: `name` from table `usa_map`, and `State` from table `wages`
+
+```{r}
+# merging map and wages data tables
+usa_map_wages = inner_join(usa_map, wages, by = c("name" = "State"))
+```
+
+
+## Version 1
+
+With the merged data `usa_map_wages`, we can plot again a map of the US 
+contiguous states, color coding the states with the `Average` values:
+
+```{r}
+# version 1
+usa_map_wages |>
+  ggplot() +
+  geom_sf(aes(fill = Average)) +
+  coord_sf(xlim = c(-123, -67), ylim = c(25, 50))
+```
+
+
+## Version 2
+
+We need to change the colors in order to follow the scheme used in the 
+choropleth map published in Forbes:
+
+```{r}
+# version 2
+inner_join(usa_map, wages, by = c("name" = "State")) |>
+  ggplot() +
+  geom_sf(aes(fill = Average)) +
+  scale_fill_gradient(low = "#0B057A", high = "#E6E6F1") +
+  coord_sf(xlim = c(-123, -67), ylim = c(25, 50))
+```
+
+
+## Version 3
+
+The next step involves categorizing salary values into different brackets
+
+- average salary greater than or equal to 70,000
+- average salary between 60,000 and 70,000
+- average salary between 50,000 and 60,000
+- average salary less than 50,000
+
+Also, for sake of practice, we can change the color scheme (to pink):
+
+```{r}
+# version 3
+inner_join(usa_map, wages, by = c("name" = "State")) |>
+  mutate(Cutoffs = case_when(
+    Average >= 70000 ~ ">=70K",
+    Average >= 60000 ~ "60K-70K",
+    Average >= 50000 ~ "50K-60K",
+    Average < 50000 ~ "<50K")) |>
+  mutate(Color = case_when(
+    Cutoffs == "<50K" ~ "#e6e6f1",
+    Cutoffs == "50K-60K" ~ "#9D9BC9",
+    Cutoffs == "60K-70K" ~ "#5450a1",
+    Cutoffs == ">=70K" ~ "#0b057a"
+  )) |>
+ggplot() +
+  geom_sf(aes(fill = Color)) +
+  # I don't look like this palette
+  scale_fill_manual(values = c("#0b057a", "#5450a1", "#9D9BC9", "#e6e6f1")) +
+  coord_sf(xlim = c(-123, -67), ylim = c(25, 50))
+```
+
+
+## Map with all States
+
+What if we want to visualize all States (including Alaska and Hawaii) and 
+not just the contiguous territory?
+
+No problem! We can use one of the maps from the package `"usmap"`, namely the
+map object returned by the function `us_map()`.
+
+The following code chunk starts with the merging operation to join `us_map()`
+data with the `wages` data, and the pipes it to `ggplot()` and friends. In 
+addition, we are using a Viridis continuous scale color:
+
+```{r}
+# use the data from "us_map()" which is already an "sf" object
+us_map() |>
+  inner_join(wages, by = c("full" = "State")) |>
+  ggplot() +
+  geom_sf(aes(fill = Average), color = "white") +
+  scale_fill_viridis_c(direction = -1) +
+  theme_void()
+```
+
+
+We can make it interactive by using `geom_sf_interactive()` and activating
+the `tooltip` argument inside the aesthetic mappings.
+
+```{r}
+# use the data from "us_map()" which is already an "sf" object
+gmap = us_map() |>
+  inner_join(wages, by = c("full" = "State")) |>
+  ggplot() +
+  geom_sf_interactive(aes(fill = Average, 
+                          tooltip = paste0(full, ": ", Average)), 
+                      color = "white") +
+  scale_fill_viridis_c(direction = -1) +
+  theme_void()
+
+girafe(ggobj = gmap)
+```
+
+
+## Interactive Map with Leaflet
+
+The previous maps have been produced with `ggplot`. They are nice but are 
+static visualizations. Interestingly, we can use the `"leaflet"` package 
+that allows us graph __interactive__ web maps.
+
+```{r}
+inner_join(usa_map, wages, by = c("name" = "State")) |>
+  mutate(Cutoffs = case_when(
+    Average >= 70000 ~ ">=70K",
+    Average >= 60000 ~ "60K-70K",
+    Average >= 50000 ~ "50K-60K",
+    Average < 50000 ~ "<50K")) |>
+  mutate(Color = case_when(
+    Cutoffs == "<50K" ~ "#e6e6f1",
+    Cutoffs == "50K-60K" ~ "#9D9BC9",
+    Cutoffs == "60K-70K" ~ "#5450a1",
+    Cutoffs == ">=70K" ~ "#0b057a"
+  )) |>
+  mutate(Label = paste0(name, ", $", Average)) |>
+leaflet() |>
+  addTiles() |>
+  setView(lng = -100, 
+          lat = 40, 
+          zoom = 4) |>
+  addPolygons(color = ~Color,
+              fillColor = ~Color, 
+              fillOpacity = 0.8, 
+              label = ~Label,
+              weight = 1,
+              highlight = highlightOptions(
+                weight = 5,
+                color = "#000000",
+                fillOpacity = 1))
+```
+
+
