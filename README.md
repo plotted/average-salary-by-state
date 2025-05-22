@@ -30,7 +30,7 @@ Curated TSV file: [wage.tsv](wage.tsv)
 
   
 
-In addition to the above CSV, similar data is available in SoFi’s
+In addition to the above TSV file, similar data is available in SoFi’s
 article **Average US Salary by State** by Jacqueline DeMarco (last
 update on Jan 28, 2025)
 
