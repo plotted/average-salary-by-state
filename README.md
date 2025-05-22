@@ -5,8 +5,8 @@ This repository contains code in R to replicate the following graphic:
 
   
 
-<img src="average-salary-by-state-in-the-us.png" style="width:80.0%"
-alt="Average Salary by State in the U.S. (2024)" />
+<img src="source/average-salary-by-state-in-the-us.png"
+style="width:80.0%" alt="Average Salary by State in the U.S. (2024)" />
 
 ## Source
 
@@ -16,19 +16,17 @@ alt="Average Salary by State in the U.S. (2024)" />
 
 - Date: Updated Sep 27, 2024
 
-- Organization: Forbes
+- From: Forbes
 
 - URL:
   <https://www.forbes.com/advisor/business/average-salary-by-state/>
 
 - PDF:
-  [Average-Salary-By-State-Forbes.pdf](Average-Salary-By-State-Forbes.pdf)
+  [Average-Salary-By-State-Forbes.pdf](source/Average-Salary-By-State-Forbes.pdf)
 
 ## Data
 
-Curated CSV file:
-
-CSV: [wage.tsv](wage.tsv)
+Curated TSV file: [wage.tsv](wage.tsv)
 
   
 

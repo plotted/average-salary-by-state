@@ -36,7 +36,7 @@ __Average Salary by State in 2024__
 
 <https://www.forbes.com/advisor/business/average-salary-by-state/>
 
-![Choropleth map of Average Salary by State in the U.S.](average-salary-by-state-in-the-us.png)
+![Choropleth map of Average Salary by State in the U.S.](source/average-salary-by-state-in-the-us.png)
 
 \
 
@@ -60,7 +60,7 @@ __Average Salary by State in 2024__
 
 ## R Packages
 
-```{r pkgs, message = FALSE, eval = FALSE}
+```{r pkgs, eval = FALSE}
 ```
 
 
@@ -111,7 +111,7 @@ webpage _Average US Salary by State_ (by Jacqueline DeMarco, 03/28/24)
 ```{r eval = FALSE}
 download.file(
   url = "https://www.sofi.com/learn/content/average-salary-in-us/", 
-  destfile = "average-salary-in-us.html")
+  destfile = "source/average-salary-in-us.html")
 ```
 
 The interesting thing is that this table contains not just average
@@ -119,7 +119,7 @@ salaries but also median salaries.
 
 ```{r}
 # import data
-tbls = read_html("average-salary-in-us.html") |>
+tbls = read_html("source/average-salary-in-us.html") |>
   html_table()
 
 dat = tbls[[1]]
